@@ -5,15 +5,17 @@ import { UpdatePostDto } from './dto/update-post.dto.js';
 import { AuthGuard } from '@nestjs/passport';
 
 @Controller('posts')
+@UseGuards(AuthGuard("jwt"))
 export class PostsController {
   constructor(private readonly postsService: PostsService) { }
 
-  @UseGuards(AuthGuard("jwt"))
+ 
   @Post('post')
   async create(@Body() createPostDto: CreatePostDto) {
     return await this.postsService.create(createPostDto);
   }
 
+  
   @Get('post')
   async findAll(
     @Query('current') current: string,
@@ -23,17 +25,17 @@ export class PostsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  async findOne(@Param('id') id: string) {
     return this.postsService.findOne(+id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto) {
-    return this.postsService.update(+id, updatePostDto);
+  async update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto) {
+    return await this.postsService.update(+id, updatePostDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.postsService.remove(+id);
+  async remove(@Param('id') id: string) {
+    return await this.postsService.remove(+id);
   }
 }

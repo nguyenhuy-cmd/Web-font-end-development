@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import type { Relation } from 'typeorm';
 import { User } from '../../user/entities/user.entity.js';
-import { Prop, Schema } from '@nestjs/mongoose';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 
 // ✅ Bắt buộc phải EXPORT dòng này để service có thể import PostDocument
@@ -9,8 +9,6 @@ export type PostDocument = HydratedDocument<Post>;// tự động thêm các tr�
 
 @Schema({ timestamps: true }) 
 export class Post {
-  @PrimaryGeneratedColumn('uuid')
-  _id: string;
 
   @Prop({ required: true })
   title: string;
@@ -21,5 +19,5 @@ export class Post {
   // Nhiều Posts thuộc về 1 User
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   author: Types.ObjectId;
-  
 }
+export const PostSchema = SchemaFactory.createForClass(Post);

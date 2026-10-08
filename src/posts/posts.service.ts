@@ -1,5 +1,5 @@
 import { UserService } from './../user/user.service.js';
-import { Injectable, Post, Query } from '@nestjs/common';
+import { Injectable, NotFoundException, Post, Query } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto.js';
 import { UpdatePostDto } from './dto/update-post.dto.js';
 import { InjectModel } from '@nestjs/mongoose';
@@ -20,8 +20,7 @@ export class PostsService {
 
     const exUser = await this.userService.findOne(createPostDto.authorId)
 
-    const newPost = await this.postsModel.create(createPostDto)
-    return newPost
+    return await this.postsModel.create(createPostDto)
   }
 
   async findAll(current: string, limitPage: string, qs: any) {
@@ -53,15 +52,27 @@ export class PostsService {
   }
 }
 
-  findOne(id: number) {
-    return `This action returns a #${id} post`;
+  async findOne(id: number) {
+    const exPost = await this.postsModel.findById(id)
+    if(!exPost){
+      throw new NotFoundException('Hiện không tìm thấy bài viết này')
+    }
+    return exPost
   }
 
-  update(id: number, updatePostDto: UpdatePostDto) {
-    return `This action updates a #${id} post`;
+  async update(id: number, updatePostDto: UpdatePostDto) {
+    const updatePost = await this.postsModel.findByIdAndUpdate(id, updatePostDto)
+    if(!updatePost){
+      throw new NotFoundException(`Không tìm thấy bài viết`)
+    }
+    return updatePost;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} post`;
+  async remove(id: number) {
+    const deletePost = await this.postsModel.findByIdAndDelete(id).exec()
+    if(!deletePost){
+      throw new NotFoundException('Không tìm thấy bài viết')
+    }
+    return deletePost;
   }
 }

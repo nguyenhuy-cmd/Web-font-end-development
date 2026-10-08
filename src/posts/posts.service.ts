@@ -1,4 +1,4 @@
-import { UserService } from './../user/user.service';
+import { UserService } from './../user/user.service.js';
 import { Injectable, Post, Query } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto.js';
 import { UpdatePostDto } from './dto/update-post.dto.js';
@@ -24,7 +24,7 @@ export class PostsService {
     return newPost
   }
 
-  async findAll(current: string, limitPage: string, qs: string) {
+  async findAll(current: string, limitPage: string, qs: any) {
     const page = parseInt(current) || 1;
     const defaultLimit = parseInt(limitPage) || 10;
 
@@ -35,8 +35,23 @@ export class PostsService {
       whereCondition.title = { $regex: title, $options: 'i' }
     }
 
-    const totalItem = await this.
+    const totalItem = await this.postsModel.countDocuments(whereCondition)
+    const result = await this.postsModel.find(whereCondition)
+    .skip(skip)
+    .limit(defaultLimit)
+    .sort({_id: -1})
+    .lean()
+
+    const totalPage = Math.ceil(totalItem / defaultLimit);
+
+    return {
+      meta: {
+        current: page,
+        pageSize: defaultLimit,
+        pages: totalPage,
+      },
   }
+}
 
   findOne(id: number) {
     return `This action returns a #${id} post`;

@@ -10,7 +10,7 @@ export type PostDocument = HydratedDocument<Post>;// tự động thêm các tr�
 @Schema({ timestamps: true }) 
 export class Post {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  _id: string;
 
   @Prop({ required: true })
   title: string;
@@ -19,7 +19,7 @@ export class Post {
   content: string;
 
   // Nhiều Posts thuộc về 1 User
-  @Prop({ type: Types.ObjectId, ref: User.name, required: true })
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   author: Types.ObjectId;
   
 }

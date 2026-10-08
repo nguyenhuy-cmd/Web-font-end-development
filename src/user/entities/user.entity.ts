@@ -16,7 +16,7 @@ export enum UserRole {
 @Schema({ timestamps: true }) // timestamps: tự động thêm createdAt và updatedAt
 export class User {
     @PrimaryGeneratedColumn('uuid')
-    id: string
+    _id: string
     // Cột username
     @Prop({ required: true })
     username: string;

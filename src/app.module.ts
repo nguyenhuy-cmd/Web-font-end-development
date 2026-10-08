@@ -17,7 +17,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        uri: configService.get<string>('DB_URI') || 'mongodb://localhost:27017/mxh',
+        uri: configService.get<string>('DB_URI') || 'mongodb://localhost:27019/mxh',
       }),
     }),
     // Distributed tracing, auto-correlated logs, request/job metrics, error

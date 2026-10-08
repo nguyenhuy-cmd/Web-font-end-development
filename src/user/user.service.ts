@@ -1,16 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectModel } from '@nestjs/mongoose';
 import { User } from './entities/user.entity.js';
-import { Like, Repository } from 'typeorm';
+import { Model } from 'mongoose';
 import { genSaltSync, hashSync } from 'bcrypt';
 
 @Injectable()
 export class UserService {
   constructor(
-    @InjectRepository(User)
-    private readonly userRepo: Repository<User>
+    @InjectModel(User.name)
+    private readonly userModel: Model<User>
   ){}
 
   hashPassWord(password: string){
@@ -18,13 +18,14 @@ export class UserService {
     const hash = hashSync(password, salt);
     return hash;
   }
+  
   async create(createUserDto: CreateUserDto) {
     const hashPassWord = this.hashPassWord(createUserDto.password)
 
     createUserDto.password = hashPassWord;
 
-    const newUser = this.userRepo.create(createUserDto)
-    return await this.userRepo.save(newUser)
+    const newUser = new this.userModel(createUserDto);
+    return await newUser.save();
   }
 
   async findAll(currentPage: string, limit: string, qs: any) {
@@ -37,22 +38,22 @@ export class UserService {
     // tìm khiếm name và email
     const whereCondition: any = {}
     if(qs?.username){
-      whereCondition.username = Like(`%${qs.username}%`)
+      whereCondition.username = { $regex: qs.username, $options: 'i' }
     }
     if(qs?.email){
-      whereCondition.email = Like(`%${qs.email}%`)
+      whereCondition.email = { $regex: qs.email, $options: 'i' }
     }
     
     // Lấy đư liệu và đếm tổng số bản ghi
-    const [result, totalTtems]  = await this.userRepo.findAndCount({
-      where: whereCondition,
-      skip: skip,
-      take: defaultLimit,
-      order: {id: 'DESC'} // sắp xép bản ghi mới lên đầu
-    })
+    const totalItems = await this.userModel.countDocuments(whereCondition);
+    const result = await this.userModel.find(whereCondition)
+      .skip(skip)
+      .limit(defaultLimit)
+      .sort({ _id: -1 })
+      .lean(); // lean để trả về raw object, dễ dàng thao tác
 
     // Tính tổng số trang
-    const totalPage = Math.ceil(totalTtems / defaultLimit);
+    const totalPage = Math.ceil(totalItems / defaultLimit);
 
     // Xóa trường password trước khi trả về fontend
     const safeResult = result.map(user => {
@@ -66,15 +67,15 @@ export class UserService {
         current: page,
         pageSize: defaultLimit,
         pages: totalPage,
-        total: totalTtems
+        total: totalItems
       },
       result: safeResult
     }
   }
 
   
-  async findOne(id: number) {
-    const exUser = this.userRepo.findOne({where: {id}});
+  async findOne(id: string) {
+    const exUser = await this.userModel.findById(id).lean();
     if(!exUser){
       throw new NotFoundException(`Không tìm thấy user với id = ${id}`)
     }
@@ -84,9 +85,9 @@ export class UserService {
     };
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto) {
-    const exUser = await this.userRepo.update(id, updateUserDto);
-    if(exUser.affected === 0){
+  async update(id: string, updateUserDto: UpdateUserDto) {
+    const exUser = await this.userModel.findByIdAndUpdate(id, updateUserDto, { new: true }).lean();
+    if(!exUser){
       throw new NotFoundException('không tìm thấy user')
     }
     return  {
@@ -95,14 +96,20 @@ export class UserService {
     }
   }
 
-  async remove(id: number) {
-    const exUser = await this.userRepo.delete(id);
-    if(exUser.affected){
+  async remove(id: string) {
+    const exUser = await this.userModel.findByIdAndDelete(id).lean();
+    if(!exUser){
       throw new NotFoundException('Không tìm thấy user')
     }
     return {
       message: 'Đã xóa thành công',
       exUser
     }
+  }
+
+  // Tìm user theo email - dùng cho chức năng login
+  // Không dùng .lean() vì cần giữ nguyên password để so sánh trong AuthService
+  async findByEmail(email: string) {
+    return await this.userModel.findOne({ email });
   }
 }

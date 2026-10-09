@@ -26,16 +26,16 @@ export class PostsController {
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
-    return this.postsService.findOne(+id);
+    return this.postsService.findOne(id);
   }
 
   @Patch(':id')
   async update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto) {
-    return await this.postsService.update(+id, updatePostDto);
+    return await this.postsService.update(id, updatePostDto);
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string) {
-    return await this.postsService.remove(+id);
+    return await this.postsService.remove(id);
   }
 }

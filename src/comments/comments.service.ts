@@ -29,7 +29,9 @@ export class CommentsService {
       post: new Types.ObjectId(postId),
       author: new Types.ObjectId(userId), // Gắn ID người bình luận
     })
-    return await newComment.save();
+    const saved = await newComment.save();
+    await saved.populate('author', 'username email');
+    return saved;
 
   }
 
@@ -39,10 +41,17 @@ export class CommentsService {
 
     const skip = (page - 1) * defaultLimit;
 
+    if (typeof qs === 'string') {
+      try { qs = JSON.parse(qs) } catch { qs = {} }
+    }
+
     const whereCondition: any = {};
     // Kiểm tra nếu có truyền content trong query string
     if (qs?.content) {
       whereCondition.content = { $regex: qs.content, $options: 'i' };
+    }
+    if (qs?.post) {
+      whereCondition.post = qs.post;
     }
 
 
@@ -51,6 +60,7 @@ export class CommentsService {
       .skip(skip)
       .limit(defaultLimit)
       .sort({ _id: -1 })
+      .populate('author', 'username email')
       .lean()
 
     const totalPage = Math.ceil(totalItem / defaultLimit);
@@ -60,30 +70,32 @@ export class CommentsService {
         current: page,
         pageSize: defaultLimit,
         pages: totalPage,
+        total: totalItem,
       },
+      result,
     }
   }
 
 
-  async findOne(id: number) {
-    const exComment = await this.commentModel.findById(id)
+  async findOne(id: string) {
+    const exComment = await this.commentModel.findById(id).populate('author', 'username email')
     if(!exComment){
       throw new NotFoundException('Hiện không tìm thấy bình luận này')
     }
     return exComment;
   }
 
-  async update(id: number, updateCommentDto: UpdateCommentDto) {
-    const updateComment = await this.commentModel.findByIdAndUpdate(id, updateCommentDto)
+  async update(id: string, updateCommentDto: UpdateCommentDto) {
+    const updateComment = await this.commentModel.findByIdAndUpdate(id, updateCommentDto, { new: true })
     if(!updateComment){
       throw new NotFoundException(`Không tìm thấy bình luận`)
     }
     return updateComment;
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const deleteComment = await this.commentModel.findByIdAndDelete(id)
-    if(deleteComment){
+    if(!deleteComment){
       throw new NotFoundException(`Không tìm thấy bình luận`)
     }
     return deleteComment;

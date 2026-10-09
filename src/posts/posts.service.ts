@@ -1,12 +1,10 @@
 import { UserService } from './../user/user.service.js';
-import { Injectable, NotFoundException, Post, Query } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto.js';
 import { UpdatePostDto } from './dto/update-post.dto.js';
 import { InjectModel } from '@nestjs/mongoose';
-import { PostsModule } from './posts.module.js';
 import { Model } from 'mongoose';
-import { PostDocument } from './entities/post.entity.js';
-import { title } from 'process';
+import { Post, type PostDocument } from './entities/post.entity.js';
 
 @Injectable()
 export class PostsService {
@@ -18,9 +16,13 @@ export class PostsService {
   ){} 
   async create(createPostDto: CreatePostDto) {
 
-    const exUser = await this.userService.findOne(createPostDto.authorId)
+    await this.userService.findOne(createPostDto.authorId)
 
-    return await this.postsModel.create(createPostDto)
+    return await this.postsModel.create({
+      title: createPostDto.title,
+      content: createPostDto.content,
+      author: createPostDto.authorId,
+    })
   }
 
   async findAll(current: string, limitPage: string, qs: any) {
@@ -29,9 +31,16 @@ export class PostsService {
 
     const skip = (page - 1) * defaultLimit;
 
+    if (typeof qs === 'string') {
+      try { qs = JSON.parse(qs) } catch { qs = {} }
+    }
+
     const whereCondition: any = {}
     if(qs?.title){
-      whereCondition.title = { $regex: title, $options: 'i' }
+      whereCondition.title = { $regex: qs.title, $options: 'i' }
+    }
+    if(qs?.author){
+      whereCondition.author = qs.author
     }
 
     const totalItem = await this.postsModel.countDocuments(whereCondition)
@@ -39,6 +48,7 @@ export class PostsService {
     .skip(skip)
     .limit(defaultLimit)
     .sort({_id: -1})
+    .populate('author', 'username email')
     .lean()
 
     const totalPage = Math.ceil(totalItem / defaultLimit);
@@ -48,27 +58,29 @@ export class PostsService {
         current: page,
         pageSize: defaultLimit,
         pages: totalPage,
+        total: totalItem,
       },
+      result,
   }
 }
 
-  async findOne(id: number) {
-    const exPost = await this.postsModel.findById(id)
+  async findOne(id: string) {
+    const exPost = await this.postsModel.findById(id).populate('author', 'username email')
     if(!exPost){
       throw new NotFoundException('Hiện không tìm thấy bài viết này')
     }
     return exPost
   }
 
-  async update(id: number, updatePostDto: UpdatePostDto) {
-    const updatePost = await this.postsModel.findByIdAndUpdate(id, updatePostDto)
+  async update(id: string, updatePostDto: UpdatePostDto) {
+    const updatePost = await this.postsModel.findByIdAndUpdate(id, updatePostDto, { new: true })
     if(!updatePost){
       throw new NotFoundException(`Không tìm thấy bài viết`)
     }
     return updatePost;
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const deletePost = await this.postsModel.findByIdAndDelete(id).exec()
     if(!deletePost){
       throw new NotFoundException('Không tìm thấy bài viết')

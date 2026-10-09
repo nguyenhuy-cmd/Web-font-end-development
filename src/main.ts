@@ -9,6 +9,7 @@ async function bootstrap() {
 
   const reflector = app.get(Reflector);
   app.useGlobalInterceptors(new TransformInterceptor(reflector));
+  app.enableCors({ origin: true, credentials: true });
   await app.listen(process.env.PORT ?? 3000);
 }
 await bootstrap();

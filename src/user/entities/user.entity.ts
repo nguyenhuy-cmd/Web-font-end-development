@@ -36,8 +36,8 @@ export class User {
     })
     role: UserRole;
 
-    @Prop({ type: Types.ObjectId, ref: Post.name, required: true })
-    posts: Types.ObjectId;
+    @Prop({ type: [{ type: Types.ObjectId, ref: Post.name }] })
+    posts: Types.ObjectId[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

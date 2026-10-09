@@ -31,16 +31,16 @@ export class CommentsController {
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
-    return await this.commentsService.findOne(+id);
+    return await this.commentsService.findOne(id);
   }
 
   @Patch(':id')
   async update(@Param('id') id: string, @Body() updateCommentDto: UpdateCommentDto) {
-    return await this.commentsService.update(+id, updateCommentDto);
+    return await this.commentsService.update(id, updateCommentDto);
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string) {
-    return await this.commentsService.remove(+id);
+    return await this.commentsService.remove(id);
   }
 }

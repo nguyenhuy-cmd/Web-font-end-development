@@ -5,7 +5,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { User } from './entities/user.entity.js';
 import { Model } from 'mongoose';
 import { genSaltSync, hashSync } from 'bcrypt';
-
+import * as bcrypt from 'bcrypt';
+import { UserRole } from './entities/user.entity.js';
 @Injectable()
 export class UserService {
   constructor(
@@ -13,6 +14,9 @@ export class UserService {
     private readonly userModel: Model<User>
   ){}
 
+  async onModuleInit() {
+    await this.createInitialAdmin();
+  }
   hashPassWord(password: string){
     const salt = genSaltSync(10)
     const hash = hashSync(password, salt);
@@ -112,4 +116,20 @@ export class UserService {
   async findByEmail(email: string) {
     return await this.userModel.findOne({ email });
   }
+
+  async createInitialAdmin() {
+  const adminEmail = 'admin@gmail.com';
+  const existingAdmin = await this.userModel.findOne({ email: adminEmail });
+
+  if (!existingAdmin) {
+    const hashedPassword = await bcrypt.hash('123456', 10);
+    await this.userModel.create({
+      username: 'admin',
+      email: adminEmail,
+      password: hashedPassword,
+      role: UserRole.ADMIN, // Phân quyền Admin
+    });
+    console.log('✅ Đã tạo tài khoản Admin mặc định thành công!');
+  }
+}
 }

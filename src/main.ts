@@ -1,10 +1,10 @@
 import { NestFactory, Reflector } from '@nestjs/core';
-import { AppModule, ObserveInstrument } from './app.module.js';
+import { AppModule} from './app.module.js';
 import { TransformInterceptor } from './common/core/transform.interceptor.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    instrument: ObserveInstrument,
+    //instrument: ObserveInstrument,
   });
 
   const reflector = app.get(Reflector);

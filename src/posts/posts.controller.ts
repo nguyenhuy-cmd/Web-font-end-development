@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, Req } from '@nestjs/common';
 import { PostsService } from './posts.service.js';
 import { CreatePostDto } from './dto/create-post.dto.js';
 import { UpdatePostDto } from './dto/update-post.dto.js';
@@ -35,7 +35,7 @@ export class PostsController {
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    return await this.postsService.remove(id);
+  async remove(@Param('id') id: string, @Req() req: any) {
+    return await this.postsService.remove(id, req.user);
   }
 }

@@ -1,10 +1,11 @@
 import { UserService } from './../user/user.service.js';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto.js';
 import { UpdatePostDto } from './dto/update-post.dto.js';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Post, type PostDocument } from './entities/post.entity.js';
+import { UserRole } from '../user/entities/user.entity.js';
 
 @Injectable()
 export class PostsService {
@@ -80,11 +81,20 @@ export class PostsService {
     return updatePost;
   }
 
-  async remove(id: string) {
-    const deletePost = await this.postsModel.findByIdAndDelete(id).exec()
-    if(!deletePost){
+  async remove(id: string, currentUser: { _id?: string; role?: string }) {
+    const exPost = await this.postsModel.findById(id).exec()
+    if(!exPost){
       throw new NotFoundException('Không tìm thấy bài viết')
     }
-    return deletePost;
+
+    const isAdmin = currentUser?.role === UserRole.ADMIN;
+    const isOwner = exPost.author?.toString() === currentUser?._id?.toString();
+
+    if (!isAdmin && !isOwner) {
+      throw new ForbiddenException('Bạn không có quyền xóa bài viết này!');
+    }
+
+    await this.postsModel.findByIdAndDelete(id).exec()
+    return exPost;
   }
 }
